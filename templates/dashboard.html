@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Financial Dashboard</h2>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Total Revenue</h5>
+                <h3>${{ total_revenue|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Total Expenses</h5>
+                <h3>${{ total_expenses|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Net Profit</h5>
+                <h3>${{ net_profit|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Historical Trends & Forecast</div>
+            <div class="card-body">
+                <canvas id="financialChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Actions</div>
+            <div class="card-body">
+                <a href="{% url 'add_record' %}" class="btn btn-primary w-100 mb-2">Add Manual Entry</a>
+                <a href="{% url 'upload_data' %}" class="btn btn-outline-secondary w-100">Upload CSV</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('financialChart').getContext('2d');
+
+    // Parse JSON data from Django context
+    const historicalData = JSON.parse('{{ historical_chart_data|escapejs }}');
+    const forecastData = JSON.parse('{{ forecast_data|escapejs }}');
+
+    // Combine Historical and Forecast for Charting
+    // This is a simplified view; in production, you might want distinct visual styling for forecast
+
+    let labels = historicalData.dates || [];
+    let revenueData = historicalData.revenue || [];
+    let expenseData = historicalData.expenses || [];
+
+    if (forecastData && forecastData.dates) {
+        labels = labels.concat(forecastData.dates);
+        revenueData = revenueData.concat(forecastData.revenue);
+        expenseData = expenseData.concat(forecastData.expenses);
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Revenue',
+                    data: revenueData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                },
+                {
+                    label: 'Expenses',
+                    data: expenseData,
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
