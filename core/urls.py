@@ -7,4 +7,6 @@ urlpatterns = [
     path('upload/', views.upload_data, name='upload_data'),
     path('reports/', views.report_list, name='reports'),
     path('reports/pdf/', views.export_pdf, name='export_pdf'),
+    path('signup/', views.signup, name='signup'),
 ]
+

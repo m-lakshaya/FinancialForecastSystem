@@ -9,11 +9,17 @@ from .forecasting import generate_forecast
 import json
 from django.http import HttpResponse
 from django.template.loader import get_template
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 from xhtml2pdf import pisa
 
+
+@login_required
 def dashboard(request):
     # Historical Data
-    records = FinancialRecord.objects.all().order_by('date')
+    records = FinancialRecord.objects.filter(user=request.user).order_by('date')
+
     
     # Simple summary metrics
     total_revenue = sum(r.amount for r in records if r.category == 'REVENUE')
@@ -37,7 +43,8 @@ def dashboard(request):
         historical_chart_data['profit'] = (pivot.get('REVENUE', 0) - pivot.get('EXPENSE', 0)).tolist()
 
     # Forecast Data (Next 12 Months)
-    forecast_data = generate_forecast(months=12)
+    forecast_data = generate_forecast(user=request.user, months=12)
+
 
     context = {
         'total_revenue': total_revenue,
@@ -48,18 +55,25 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
+@login_required
 def add_record(request):
+
     if request.method == 'POST':
         form = RecordForm(request.POST)
         if form.is_valid():
-            form.save()
+            record = form.save(commit=False)
+            record.user = request.user
+            record.save()
+
             messages.success(request, 'Record added successfully!')
             return redirect('dashboard')
     else:
         form = RecordForm()
     return render(request, 'add_record.html', {'form': form})
 
+@login_required
 def upload_data(request):
+
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
@@ -78,8 +92,10 @@ def upload_data(request):
                         date=row.get('Date'),
                         category=row.get('Category').upper(), # Ensure correct case
                         amount=float(row.get('Amount', 0)),
-                        description=row.get('Description', '')
+                        description=row.get('Description', ''),
+                        user=request.user
                     ))
+
                 
                 FinancialRecord.objects.bulk_create(records)
                 messages.success(request, f'Successfully uploaded {len(records)} records.')
@@ -90,12 +106,16 @@ def upload_data(request):
         form = UploadFileForm()
     return render(request, 'upload.html', {'form': form})
 
+@login_required
 def report_list(request):
-    records = FinancialRecord.objects.all().order_by('-date')
+    records = FinancialRecord.objects.filter(user=request.user).order_by('-date')
+
     return render(request, 'reports.html', {'records': records})
 
+@login_required
 def export_pdf(request):
-    records = FinancialRecord.objects.all().order_by('-date')
+    records = FinancialRecord.objects.filter(user=request.user).order_by('-date')
+
     template_path = 'reports.html'
     context = {'records': records}
     response = HttpResponse(content_type='application/pdf')
@@ -107,3 +127,14 @@ def export_pdf(request):
         return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Registration successful! Welcome to your dashboard.')
+            return redirect('dashboard')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})

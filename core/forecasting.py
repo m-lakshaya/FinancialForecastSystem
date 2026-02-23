@@ -5,12 +5,13 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from .models import FinancialRecord
 
-def generate_forecast(months=12):
+def generate_forecast(user, months=12):
     """
     Generates a forecast for the next `months` months.
     Returns a dictionary with dates and predicted values for Revenue, Expense, and Profit.
     """
-    records = FinancialRecord.objects.all().order_by('date')
+    records = FinancialRecord.objects.filter(user=user).order_by('date')
+
     if not records.exists():
         return None
 

@@ -1,6 +1,9 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class FinancialRecord(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='records', null=True, blank=True)
+
     CATEGORY_CHOICES = [
         ('REVENUE', 'Revenue'),
         ('EXPENSE', 'Expense'),
