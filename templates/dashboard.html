@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% load humanize %}
 <h2 class="mb-4">Financial Dashboard</h2>
 
 <!-- Summary Cards -->
@@ -9,7 +10,7 @@
         <div class="card text-white bg-success">
             <div class="card-body">
                 <h5 class="card-title">Total Revenue</h5>
-                <h3>${{ total_revenue|floatformat:2 }}</h3>
+                <h3>₹{{ total_revenue|floatformat:2|intcomma }}</h3>
             </div>
         </div>
     </div>
@@ -17,7 +18,7 @@
         <div class="card text-white bg-danger">
             <div class="card-body">
                 <h5 class="card-title">Total Expenses</h5>
-                <h3>${{ total_expenses|floatformat:2 }}</h3>
+                <h3>₹{{ total_expenses|floatformat:2|intcomma }}</h3>
             </div>
         </div>
     </div>
@@ -25,17 +26,51 @@
         <div class="card text-white bg-primary">
             <div class="card-body">
                 <h5 class="card-title">Net Profit</h5>
-                <h3>${{ net_profit|floatformat:2 }}</h3>
+                <h3>₹{{ net_profit|floatformat:2|intcomma }}</h3>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Forecast Summary Cards -->
+{% if next_month_forecast.date %}
+<h4 class="mb-3 mt-4">Forecast for {{ next_month_forecast.date|date:"F Y" }}</h4>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-dark bg-light border-success">
+            <div class="card-body">
+                <h6 class="card-title text-success">Projected Revenue</h6>
+                <h4>₹{{ next_month_forecast.revenue|floatformat:2|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-dark bg-light border-danger">
+            <div class="card-body">
+                <h6 class="card-title text-danger">Projected Expenses</h6>
+                <h4>₹{{ next_month_forecast.expenses|floatformat:2|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-dark bg-light border-primary">
+            <div class="card-body">
+                <h6 class="card-title text-primary">Projected Net Profit</h6>
+                <h4>₹{{ next_month_forecast.profit|floatformat:2|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Charts -->
 <div class="row">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">Historical Trends & Forecast</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Financial Trends & Forecast</span>
+                <small class="text-muted"><i class="fas fa-info-circle"></i> Dashed lines indicate forecast</small>
+            </div>
             <div class="card-body">
                 <canvas id="financialChart"></canvas>
             </div>
@@ -53,53 +88,110 @@
 </div>
 
 <script>
-    const ctx = document.getElementById('financialChart').getContext('2d');
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('financialChart').getContext('2d');
 
-    // Parse JSON data from Django context
-    const historicalData = JSON.parse('{{ historical_chart_data|escapejs }}');
-    const forecastData = JSON.parse('{{ forecast_data|escapejs }}');
+        // Parse JSON data from Django context
+        const historicalData = JSON.parse('{{ historical_chart_data|escapejs }}');
+        const forecastData = JSON.parse('{{ forecast_data|escapejs }}');
 
-    // Combine Historical and Forecast for Charting
-    // This is a simplified view; in production, you might want distinct visual styling for forecast
+        const historicalLabels = historicalData.dates || [];
+        const forecastLabels = (forecastData && forecastData.dates) ? forecastData.dates : [];
+        const allLabels = historicalLabels.concat(forecastLabels);
 
-    let labels = historicalData.dates || [];
-    let revenueData = historicalData.revenue || [];
-    let expenseData = historicalData.expenses || [];
+        // Datasets construction
+        const datasets = [];
 
-    if (forecastData && forecastData.dates) {
-        labels = labels.concat(forecastData.dates);
-        revenueData = revenueData.concat(forecastData.revenue);
-        expenseData = expenseData.concat(forecastData.expenses);
-    }
+        if (historicalLabels.length > 0) {
+            // Historical Revenue
+            datasets.push({
+                label: 'Historical Revenue',
+                data: historicalData.revenue,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.3,
+                fill: true
+            });
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Revenue',
-                    data: revenueData,
-                    borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.1,
-                    fill: false
+            // Historical Expenses
+            datasets.push({
+                label: 'Historical Expenses',
+                data: historicalData.expenses,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.3,
+                fill: true
+            });
+        }
+
+        if (forecastLabels.length > 0) {
+            // Need to pad historical data for forecast alignment
+            const pad = new Array(historicalLabels.length - 1).fill(null);
+
+            // Connect historical last point to forecast first point
+            const lastHistRev = historicalData.revenue[historicalData.revenue.length - 1];
+            const lastHistExp = historicalData.expenses[historicalData.expenses.length - 1];
+
+            // Forecast Revenue
+            datasets.push({
+                label: 'Forecast Revenue',
+                data: pad.concat([lastHistRev]).concat(forecastData.revenue),
+                borderColor: 'rgba(75, 192, 192, 0.6)',
+                borderDash: [5, 5],
+                tension: 0.3,
+                fill: false
+            });
+
+            // Forecast Expenses
+            datasets.push({
+                label: 'Forecast Expenses',
+                data: pad.concat([lastHistExp]).concat(forecastData.expenses),
+                borderColor: 'rgba(255, 99, 132, 0.6)',
+                borderDash: [5, 5],
+                tension: 0.3,
+                fill: false
+            });
+        }
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: allLabels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return '₹' + value.toLocaleString('en-IN');
+                            }
+                        }
+                    }
                 },
-                {
-                    label: 'Expenses',
-                    data: expenseData,
-                    borderColor: 'rgb(255, 99, 132)',
-                    tension: 0.1,
-                    fill: false
-                }
-            ]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += '₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                                }
+                                return label;
+                            }
+                        }
+                    }
                 }
             }
-        }
+        });
     });
 </script>
 {% endblock %}

@@ -45,6 +45,19 @@ def dashboard(request):
     # Forecast Data (Next 12 Months)
     forecast_data = generate_forecast(user=request.user, months=12)
 
+    # Specific Next Month Forecast
+    next_month_forecast = {
+        'revenue': 0,
+        'expenses': 0,
+        'profit': 0,
+        'date': ''
+    }
+    
+    if forecast_data and forecast_data['dates']:
+        next_month_forecast['date'] = forecast_data['dates'][0]
+        next_month_forecast['revenue'] = forecast_data['revenue'][0]
+        next_month_forecast['expenses'] = forecast_data['expenses'][0]
+        next_month_forecast['profit'] = forecast_data['profit'][0]
 
     context = {
         'total_revenue': total_revenue,
@@ -52,6 +65,7 @@ def dashboard(request):
         'net_profit': net_profit,
         'historical_chart_data': json.dumps(historical_chart_data),
         'forecast_data': json.dumps(forecast_data) if forecast_data else json.dumps({}),
+        'next_month_forecast': next_month_forecast,
     }
     return render(request, 'dashboard.html', context)
 
