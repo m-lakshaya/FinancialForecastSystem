@@ -6,6 +6,7 @@ from django.contrib import messages
 from .models import FinancialRecord
 from .forms import RecordForm, UploadFileForm
 from .forecasting import generate_forecast
+from .suggestions_engine import generate_suggestions
 import json
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -59,6 +60,9 @@ def dashboard(request):
         next_month_forecast['expenses'] = forecast_data['expenses'][0]
         next_month_forecast['profit'] = forecast_data['profit'][0]
 
+    # Generate Suggestions
+    suggestions_data = generate_suggestions(user=request.user, forecast_data=forecast_data)
+
     context = {
         'total_revenue': total_revenue,
         'total_expenses': total_expenses,
@@ -66,6 +70,7 @@ def dashboard(request):
         'historical_chart_data': json.dumps(historical_chart_data),
         'forecast_data': json.dumps(forecast_data) if forecast_data else json.dumps({}),
         'next_month_forecast': next_month_forecast,
+        'suggestions_data': suggestions_data,
     }
     return render(request, 'dashboard.html', context)
 

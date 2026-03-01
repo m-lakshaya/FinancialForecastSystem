@@ -37,31 +37,73 @@
 <h4 class="mb-3 mt-4">Forecast for {{ next_month_forecast.date|date:"F Y" }}</h4>
 <div class="row mb-4">
     <div class="col-md-4">
-        <div class="card text-dark bg-light border-success">
+        <div class="card text-dark bg-light border-success shadow-sm">
             <div class="card-body">
-                <h6 class="card-title text-success">Projected Revenue</h6>
+                <h6 class="card-title text-success"><i class="fas fa-arrow-up me-2"></i>Projected Revenue</h6>
                 <h4>₹{{ next_month_forecast.revenue|floatformat:2|intcomma }}</h4>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-dark bg-light border-danger">
+        <div class="card text-dark bg-light border-danger shadow-sm">
             <div class="card-body">
-                <h6 class="card-title text-danger">Projected Expenses</h6>
+                <h6 class="card-title text-danger"><i class="fas fa-arrow-down me-2"></i>Projected Expenses</h6>
                 <h4>₹{{ next_month_forecast.expenses|floatformat:2|intcomma }}</h4>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-dark bg-light border-primary">
+        <div class="card text-dark bg-light border-primary shadow-sm">
             <div class="card-body">
-                <h6 class="card-title text-primary">Projected Net Profit</h6>
+                <h6 class="card-title text-primary"><i class="fas fa-chart-line me-2"></i>Projected Net Profit</h6>
                 <h4>₹{{ next_month_forecast.profit|floatformat:2|intcomma }}</h4>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
+
+<!-- Insights & Suggestions Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info shadow-sm">
+            <div class="card-header bg-info text-white d-flex align-items-center">
+                <i class="fas fa-lightbulb me-2"></i>
+                <h5 class="mb-0">Insights & Suggestions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <h6 class="text-muted mb-3"><i class="fas fa-list-ul me-2"></i>Financial Summary</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for point in suggestions_data.summary_points %}
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-check-circle text-info me-2"></i> {{ point }}
+                            </li>
+                            {% empty %}
+                            <li class="list-group-item border-0 ps-0 text-muted italic">Add more data to see a detailed
+                                summary.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3"><i class="fas fa-bolt me-2"></i>Actionable Suggestions</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for suggestion in suggestions_data.suggestions %}
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-arrow-right text-warning me-2"></i> {{ suggestion }}
+                            </li>
+                            {% empty %}
+                            <li class="list-group-item border-0 ps-0 text-muted italic">No suggestions at this time.
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Charts -->
 <div class="row">
