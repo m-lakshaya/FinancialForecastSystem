@@ -60,4 +60,11 @@ def generate_forecast(user, months=12):
     # Calculate Profit
     forecast_data['profit'] = [r - e for r, e in zip(forecast_data['revenue'], forecast_data['expenses'])]
 
+    # Calculate Annual Projection (next 12 months)
+    forecast_data['annual_projection'] = {
+        'revenue': sum(forecast_data['revenue']),
+        'expenses': sum(forecast_data['expenses']),
+        'profit': sum(forecast_data['profit'])
+    }
+
     return forecast_data

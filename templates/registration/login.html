@@ -20,10 +20,24 @@
                     <div class="mb-3">
                         <label for="id_username" class="form-label">Username</label>
                         {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="text-danger small">
+                            {% for error in form.username.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
                         <label for="id_password" class="form-label">Password</label>
                         {{ form.password }}
+                        {% if form.password.errors %}
+                        <div class="text-danger small">
+                            {% for error in form.password.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Login</button>

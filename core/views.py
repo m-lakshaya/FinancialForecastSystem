@@ -1,6 +1,7 @@
 import csv
 import io
 import pandas as pd
+from datetime import datetime
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import FinancialRecord
@@ -60,6 +61,17 @@ def dashboard(request):
         next_month_forecast['expenses'] = forecast_data['expenses'][0]
         next_month_forecast['profit'] = forecast_data['profit'][0]
 
+    # Prepare Monthly Breakdown for Table
+    monthly_forecasts = []
+    if forecast_data and forecast_data['dates']:
+        for i in range(len(forecast_data['dates'])):
+            monthly_forecasts.append({
+                'date': datetime.strptime(forecast_data['dates'][i], '%Y-%m-%d'),
+                'revenue': forecast_data['revenue'][i],
+                'expenses': forecast_data['expenses'][i],
+                'profit': forecast_data['profit'][i],
+            })
+
     # Generate Suggestions
     suggestions_data = generate_suggestions(user=request.user, forecast_data=forecast_data)
 
@@ -70,6 +82,8 @@ def dashboard(request):
         'historical_chart_data': json.dumps(historical_chart_data),
         'forecast_data': json.dumps(forecast_data) if forecast_data else json.dumps({}),
         'next_month_forecast': next_month_forecast,
+        'annual_projection': forecast_data.get('annual_projection') if forecast_data else None,
+        'monthly_forecasts': monthly_forecasts,
         'suggestions_data': suggestions_data,
     }
     return render(request, 'dashboard.html', context)
